@@ -964,12 +964,29 @@
   id="suiviPrets"
   class="section">
 
-  <h2>
-    Suivi des prêts/don
-  </h2>
+ <h2>
+  Suivi des prêts/don
+</h2>
 
-  <div
-    id="listeSuiviPrets">
+<button
+  type="button"
+  onclick="telechargerSuiviPretsExcel()"
+  style="
+    margin: 10px 0 20px 0;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #217346;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  "
+>
+  📥 Télécharger le suivi en Excel
+</button>
+
+<div
+  id="listeSuiviPrets">
 
     <div class="message">
       Chargement du suivi des prêts...
@@ -9715,6 +9732,279 @@ else if (
       );
 
     }
+  );
+
+}
+  async function telechargerSuiviPretsExcel() {
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("Réservations")
+    .select(`
+      id,
+      date_demande,
+      date_debut,
+      date_retour,
+      date_retour_reel,
+      statut,
+      quantite,
+      quantite_retournee,
+      type_demande,
+
+      Profils!Réservations_utilisateur_id_fkey (
+        nom,
+        prenom,
+        service
+      ),
+
+      Consommables!Réservations_consommable_id_fkey (
+        "Nom du sortant",
+        Categorie,
+        Laboratoire,
+        Etat
+      )
+    `)
+    .in(
+      "type_demande",
+      [
+        "pret",
+        "don"
+      ]
+    )
+    .order(
+      "date_retour",
+      {
+        ascending: true
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "Erreur export suivi prêts :",
+      error
+    );
+
+    alert(
+      "Impossible de télécharger le suivi : " +
+      error.message
+    );
+
+    return;
+  }
+
+
+  if (!data || data.length === 0) {
+
+    alert(
+      "Aucune donnée à exporter."
+    );
+
+    return;
+  }
+
+
+  const lignes =
+    data.map(
+      reservation => {
+
+        const nomUtilisateur =
+          `${
+            reservation.Profils?.prenom ||
+            ""
+          } ${
+            reservation.Profils?.nom ||
+            ""
+          }`.trim();
+
+
+        const quantite =
+          Number(
+            reservation.quantite
+          ) || 0;
+
+
+        const quantiteRetournee =
+          Number(
+            reservation.quantite_retournee
+          ) || 0;
+
+
+        let statutTexte =
+          reservation.statut;
+
+
+        if (
+          reservation.type_demande === "don" &&
+          reservation.statut === "acceptee"
+        ) {
+
+          statutTexte =
+            "Donnée";
+
+        }
+
+        else if (
+          reservation.type_demande === "pret" &&
+          reservation.statut === "acceptee" &&
+          reservation.date_retour &&
+          reservation.date_retour <
+            new Date()
+              .toISOString()
+              .split("T")[0] &&
+          quantiteRetournee < quantite
+        ) {
+
+          statutTexte =
+            "En retard";
+
+        }
+
+        else if (
+          reservation.statut === "acceptee"
+        ) {
+
+          statutTexte =
+            "En prêt";
+
+        }
+
+        else if (
+          reservation.statut === "en_attente"
+        ) {
+
+          statutTexte =
+            "En attente";
+
+        }
+
+        else if (
+          reservation.statut === "retour_signale"
+        ) {
+
+          statutTexte =
+            "Retour signalé";
+
+        }
+
+        else if (
+          reservation.statut === "retour_partiel"
+        ) {
+
+          statutTexte =
+            "Retour partiel";
+
+        }
+
+        else if (
+          reservation.statut === "retournee"
+        ) {
+
+          statutTexte =
+            "Retour complet";
+
+        }
+
+
+        return {
+
+          "Consommable":
+            reservation.Consommables?.[
+              "Nom du sortant"
+            ] ||
+            "Consommable",
+
+          "Demandeur":
+            nomUtilisateur ||
+            "Utilisateur",
+
+          "Service":
+            reservation.Profils?.service ||
+            "Non renseigné",
+
+          "Type de demande":
+            reservation.type_demande === "don"
+              ? "Don"
+              : "Prêt",
+
+          "Quantité":
+            quantite,
+
+          "Date de début":
+            reservation.date_debut ||
+            "",
+
+          "Date de retour prévue":
+            reservation.date_retour ||
+            "",
+
+          "Date de retour réelle":
+            reservation.date_retour_reel ||
+            "",
+
+          "Quantité retournée":
+            quantiteRetournee,
+
+          "État":
+            reservation.Consommables?.Etat ||
+            "",
+
+          "Statut":
+            statutTexte
+
+        };
+
+      }
+    );
+
+
+  /*
+   * Vérifier que SheetJS est disponible
+   */
+
+  if (
+    typeof XLSX === "undefined"
+  ) {
+
+    alert(
+      "La bibliothèque Excel n'est pas disponible."
+    );
+
+    return;
+  }
+
+
+  /*
+   * Créer le fichier Excel
+   */
+
+  const feuille =
+    XLSX.utils.json_to_sheet(
+      lignes
+    );
+
+
+  const classeur =
+    XLSX.utils.book_new();
+
+
+  XLSX.utils.book_append_sheet(
+    classeur,
+    feuille,
+    "Suivi prêts-dons"
+  );
+
+
+  /*
+   * Télécharger
+   */
+
+  XLSX.writeFile(
+    classeur,
+    "suivi-prets-dons.xlsx"
   );
 
 }
