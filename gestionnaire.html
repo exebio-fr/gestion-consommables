@@ -9730,6 +9730,7 @@ async function chargerSuiviPrets() {
 <th>Quantité retournée</th>
 <th>État</th>
 <th>Statut</th>
+<th>Actions</th>
 
           </tr>
 
@@ -9971,7 +9972,13 @@ else if (
       }
     </strong>
   </td>
-
+<td>
+  <button
+    type="button"
+    onclick="modifierSuiviPret('${reservation.id}')">
+    ✏️ Modifier
+  </button>
+</td>
 `;
 
 
@@ -9981,6 +9988,230 @@ else if (
 
     }
   );
+
+}
+  /* =========================================================
+   MODIFIER UN SUIVI DE PRÊT / DON
+   ========================================================= */
+
+async function modifierSuiviPret(reservationId) {
+
+  const {
+    data: reservation,
+    error
+  } =
+    await supabaseClient
+      .from("Réservations")
+      .select(`
+        id,
+        date_debut,
+        date_retour,
+        date_retour_reel,
+        quantite,
+        quantite_retournee,
+        statut,
+        type_demande
+      `)
+      .eq("id", reservationId)
+      .single();
+
+
+  if (error || !reservation) {
+
+    console.error(
+      "Erreur récupération réservation :",
+      error
+    );
+
+    alert(
+      "Impossible de récupérer les informations de cette réservation."
+    );
+
+    return;
+  }
+
+
+  const nouveauStatut =
+    prompt(
+      "Statut actuel : " +
+      reservation.statut +
+      "\n\n" +
+      "Entrez le nouveau statut :\n" +
+      "acceptee\n" +
+      "retour_signale\n" +
+      "retour_partiel\n" +
+      "retournee\n" +
+      "refusee",
+      reservation.statut
+    );
+
+
+  if (nouveauStatut === null) {
+    return;
+  }
+
+
+  const nouvelleQuantite =
+    prompt(
+      "Quantité réservée :",
+      reservation.quantite
+    );
+
+
+  if (nouvelleQuantite === null) {
+    return;
+  }
+
+
+  const nouvelleDateDebut =
+    prompt(
+      "Date de début (AAAA-MM-JJ) :",
+      reservation.date_debut || ""
+    );
+
+
+  if (nouvelleDateDebut === null) {
+    return;
+  }
+
+
+  const nouvelleDateRetour =
+    prompt(
+      "Date de retour prévue (AAAA-MM-JJ) :",
+      reservation.date_retour || ""
+    );
+
+
+  if (nouvelleDateRetour === null) {
+    return;
+  }
+
+
+  const nouvelleDateRetourReel =
+    prompt(
+      "Date de retour réelle (AAAA-MM-JJ) :",
+      reservation.date_retour_reel || ""
+    );
+
+
+  if (nouvelleDateRetourReel === null) {
+    return;
+  }
+
+
+  const nouvelleQuantiteRetournee =
+    prompt(
+      "Quantité retournée :",
+      reservation.quantite_retournee || 0
+    );
+
+
+  if (nouvelleQuantiteRetournee === null) {
+    return;
+  }
+
+
+  const quantite =
+    Number(nouvelleQuantite);
+
+
+  const quantiteRetournee =
+    Number(nouvelleQuantiteRetournee);
+
+
+  if (
+    !Number.isInteger(quantite) ||
+    quantite < 0
+  ) {
+
+    alert(
+      "La quantité doit être un nombre entier positif."
+    );
+
+    return;
+  }
+
+
+  if (
+    !Number.isInteger(quantiteRetournee) ||
+    quantiteRetournee < 0
+  ) {
+
+    alert(
+      "La quantité retournée doit être un nombre entier positif."
+    );
+
+    return;
+  }
+
+
+  if (
+    quantiteRetournee >
+    quantite
+  ) {
+
+    alert(
+      "La quantité retournée ne peut pas dépasser la quantité réservée."
+    );
+
+    return;
+  }
+
+
+  const {
+    error: erreurModification
+  } =
+    await supabaseClient
+      .from("Réservations")
+      .update({
+
+        statut:
+          nouveauStatut,
+
+        quantite:
+          quantite,
+
+        date_debut:
+          nouvelleDateDebut || null,
+
+        date_retour:
+          nouvelleDateRetour || null,
+
+        date_retour_reel:
+          nouvelleDateRetourReel || null,
+
+        quantite_retournee:
+          quantiteRetournee
+
+      })
+      .eq(
+        "id",
+        reservationId
+      );
+
+
+  if (erreurModification) {
+
+    console.error(
+      "Erreur modification réservation :",
+      erreurModification
+    );
+
+    alert(
+      "Impossible d'enregistrer les modifications : " +
+      erreurModification.message
+    );
+
+    return;
+  }
+
+
+  alert(
+    "Les modifications ont été enregistrées."
+  );
+
+
+  await chargerSuiviPrets();
 
 }
   async function telechargerSuiviPretsExcel() {
