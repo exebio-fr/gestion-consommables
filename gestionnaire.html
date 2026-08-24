@@ -9769,106 +9769,149 @@ async function chargerSuiviPrets() {
 
 
       let statutTexte =
-        reservation.statut;
+  reservation.statut;
+
+
+/* =========================================================
+   DON
+   ========================================================= */
+
 if (
-  reservation.type_demande === "don" &&
-  reservation.statut === "acceptee"
+  reservation.type_demande === "don"
 ) {
 
-  statutTexte = "Donnée";
+  if (
+    reservation.statut === "acceptee"
+  ) {
+
+    statutTexte =
+      "Donnée";
+
+  }
+
+  else if (
+    reservation.statut === "en_attente"
+  ) {
+
+    statutTexte =
+      "En attente";
+
+  }
+
+  else if (
+    reservation.statut === "refusee"
+  ) {
+
+    statutTexte =
+      "Refusée";
+
+  }
 
 }
+
+
+/* =========================================================
+   PRÊT
+   ========================================================= */
 
 else if (
-  reservation.type_demande === "pret" &&
-  reservation.statut === "acceptee" &&
-  reservation.date_retour &&
-  reservation.date_retour < new Date().toISOString().split("T")[0] &&
-  (
-    Number(reservation.quantite_retournee) || 0
-  ) < (
-    Number(reservation.quantite) || 0
-  )
+  reservation.type_demande === "pret"
 ) {
 
-  statutTexte = "En retard";
+  if (
+    reservation.statut === "en_attente"
+  ) {
+
+    statutTexte =
+      "En attente";
+
+  }
+
+  else if (
+    reservation.statut === "acceptee"
+  ) {
+
+    if (
+      reservation.date_retour &&
+      reservation.date_retour <
+        new Date().toISOString().split("T")[0] &&
+      (
+        Number(
+          reservation.quantite_retournee
+        ) || 0
+      ) <
+      (
+        Number(
+          reservation.quantite
+        ) || 0
+      )
+    ) {
+
+      statutTexte =
+        "En retard";
+
+    } else {
+
+      statutTexte =
+        "En prêt";
+
+    }
+
+  }
+
+  else if (
+    reservation.statut === "retour_signale"
+  ) {
+
+    statutTexte =
+      "Retour signalé";
+
+  }
+
+  else if (
+    reservation.statut === "retour_partiel"
+  ) {
+
+    statutTexte =
+      "Retour partiel";
+
+  }
+
+  else if (
+    reservation.statut === "retournee"
+  ) {
+
+    statutTexte =
+      "Retour complet";
+
+  }
+
+  else if (
+    reservation.statut === "refusee"
+  ) {
+
+    statutTexte =
+      "Refusée";
+
+  }
 
 }
 
-else if (
-  reservation.statut === "acceptee"
-) {
 
-  statutTexte = "En prêt";
-
-}
-
-      if (
-        reservation.statut ===
-        "en_attente"
-      ) {
-
-        statutTexte =
-          "En attente";
-
-      }
-
-      else if (
-        reservation.statut ===
-        "acceptee"
-      ) {
-
-        statutTexte =
-          "En prêt";
-
-      }
-
-      else if (
-        reservation.statut ===
-        "retour_signale"
-      ) {
-
-        statutTexte =
-          "Retour signalé";
-
-      }
-
-      else if (
-        reservation.statut ===
-        "retour_partiel"
-      ) {
-
-        statutTexte =
-          "Retour partiel";
-
-      }
-
-      else if (
-        reservation.statut ===
-        "retournee"
-      ) {
-
-        statutTexte =
-          "Retour complet";
-
-      }
+const nomUtilisateur =
+  `${
+    reservation.Profils?.prenom ||
+    ""
+  } ${
+    reservation.Profils?.nom ||
+    ""
+  }`.trim();
 
 
-      const nomUtilisateur =
-        `${
-          reservation.Profils?.prenom ||
-          ""
-        } ${
-          reservation.Profils?.nom ||
-          ""
-        }`.trim();
-
-
-      const ligne =
-        document.createElement(
-          "tr"
-        );
-
+const ligne =
+  document.createElement(
+    "tr"
+  );
 
       ligne.innerHTML = `
 
