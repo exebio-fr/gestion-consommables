@@ -8526,6 +8526,158 @@ if (fichierPhoto) {
   }
 
 }
+  /* =========================================================
+   IMPORT PHOTO KOBO
+   ========================================================= */
+
+async function importerPhotoKobo(urlPhotoKobo) {
+
+  if (!urlPhotoKobo) {
+    return null;
+  }
+
+  try {
+
+    const reponse =
+      await fetch(
+        urlPhotoKobo
+      );
+
+    if (!reponse.ok) {
+
+      console.warn(
+        "Impossible de récupérer la photo Kobo :",
+        urlPhotoKobo
+      );
+
+      return null;
+
+    }
+
+    const blob =
+      await reponse.blob();
+
+
+    if (
+      !blob.type.startsWith("image/")
+    ) {
+
+      console.warn(
+        "Le fichier Kobo n'est pas une image."
+      );
+
+      return null;
+
+    }
+
+
+    let extension =
+      "jpg";
+
+
+    if (
+      blob.type ===
+      "image/png"
+    ) {
+
+      extension =
+        "png";
+
+    }
+
+    else if (
+      blob.type ===
+      "image/webp"
+    ) {
+
+      extension =
+        "webp";
+
+    }
+
+    else if (
+      blob.type ===
+      "image/jpeg"
+    ) {
+
+      extension =
+        "jpg";
+
+    }
+
+
+    const nomFichier =
+      `${crypto.randomUUID()}.${extension}`;
+
+
+    const {
+      error: erreurUpload
+    } =
+      await supabaseClient
+        .storage
+        .from(
+          "photos-consommables"
+        )
+        .upload(
+          nomFichier,
+          blob,
+          {
+            cacheControl:
+              "3600",
+
+            upsert:
+              false,
+
+            contentType:
+              blob.type
+          }
+        );
+
+
+    if (erreurUpload) {
+
+      console.error(
+        "Erreur upload photo Kobo :",
+        erreurUpload
+      );
+
+      return null;
+
+    }
+
+
+    const {
+      data: urlData
+    } =
+      supabaseClient
+        .storage
+        .from(
+          "photos-consommables"
+        )
+        .getPublicUrl(
+          nomFichier
+        );
+
+
+    return (
+      urlData?.publicUrl ||
+      null
+    );
+
+  }
+
+  catch (erreur) {
+
+    console.error(
+      "Erreur récupération photo Kobo :",
+      erreur
+    );
+
+    return null;
+
+  }
+
+}
   async function importerConsommablesExcel() {
 
   const message =
@@ -8546,61 +8698,100 @@ if (fichierPhoto) {
     return;
   }
 
-  const consommables =
-    consommablesExcel.map(
-      function(ligne) {
+ const consommables = [];
 
-        return {
+for (
+  const ligne of consommablesExcel
+) {
 
-          "Nom du sortant":
+  const urlPhotoKobo =
+    String(
+      ligne["Photo"] || ""
+    ).trim();
+
+
+  let urlPhoto =
+    null;
+
+
+  /*
+   * Photo facultative
+   */
+
+  if (urlPhotoKobo) {
+
+    message.innerHTML = `
+      <div class="info">
+        Importation de la photo de
+        <strong>
+          ${echapperHTML(
             String(
               ligne["Nom du sortant"] || ""
-            ).trim(),
+            )
+          )}
+        </strong>...
+      </div>
+    `;
 
-          Categorie:
-            String(
-              ligne["Catégorie"] || ""
-            ).trim(),
 
-          Laboratoire:
-            String(
-              ligne["Laboratoire"] || ""
-            ).trim(),
+    urlPhoto =
+      await importerPhotoKobo(
+        urlPhotoKobo
+      );
 
-          Description:
-            String(
-              ligne["Description"] || ""
-            ).trim() || null,
+  }
 
-          Etat:
-            String(
-              ligne["État"] || ""
-            ).trim(),
 
-          Quantite:
-            parseInt(
-              ligne["Quantité"],
-              10
-            ),
+  consommables.push({
 
-          Date_ajout:
-            new Date()
-              .toISOString()
-              .split("T")[0],
+    "Nom du sortant":
+      String(
+        ligne["Nom du sortant"] || ""
+      ).trim(),
 
-          Actif:
-            true,
+    Categorie:
+      String(
+        ligne["Catégorie"] || ""
+      ).trim(),
 
-          disponible:
-            true,
+    Laboratoire:
+      String(
+        ligne["Laboratoire"] || ""
+      ).trim(),
 
-          photo:
-            null
+    Description:
+      String(
+        ligne["Description"] || ""
+      ).trim() || null,
 
-        };
+    Etat:
+      String(
+        ligne["État"] || ""
+      ).trim(),
 
-      }
-    );
+    Quantite:
+      parseInt(
+        ligne["Quantité"],
+        10
+      ),
+
+    Date_ajout:
+      new Date()
+        .toISOString()
+        .split("T")[0],
+
+    Actif:
+      true,
+
+    disponible:
+      true,
+
+    photo:
+      urlPhoto
+
+  });
+
+}
 
 
   /* Vérification des lignes */
