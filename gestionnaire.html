@@ -3924,74 +3924,115 @@ async function afficherPropositionsUtilisateur(
         "card";
 
 
-     card.innerHTML = `
+           let blocPhoto = "";
 
-  ${
-    proposition.photo
-
-    ?
-
-    `
-      <div
-        style="
-          margin-bottom:15px;
-          text-align:center;
-        "
-      >
-
-        <img
-          src="${echapperHTML(
-            proposition.photo
-          )}"
-          alt="Photo du consommable"
-          style="
-            width:100%;
-            max-width:300px;
-            max-height:300px;
-            object-fit:contain;
-            border-radius:10px;
-            border:1px solid #ddd;
-            cursor:pointer;
-          "
-          onclick="
-            window.open(
-              '${echapperHTML(
-                proposition.photo
-              )}',
-              '_blank'
-            )
-          "
-        >
-
-      </div>
-    `
-
-    :
-
-    `
-      <div
-        class="message"
-        style="
-          margin-bottom:15px;
-          text-align:center;
-        "
-      >
-
-        📷 Aucune photo fournie.
-
-      </div>
-    `
-
-  }
+      const urlPhoto =
+        proposition.photo
+          ? String(proposition.photo).trim()
+          : "";
 
 
-  <h3>
+      if (urlPhoto) {
 
-    ${echapperHTML(
-      proposition.nom_consommable
-    )}
+        blocPhoto = `
 
-  </h3>
+          <div
+            style="
+              margin-bottom:20px;
+              text-align:center;
+            "
+          >
+
+            <p>
+              <strong>
+                📷 Photo du consommable
+              </strong>
+            </p>
+
+
+            <img
+              src="${echapperHTML(urlPhoto)}"
+              alt="Photo du consommable"
+              style="
+                display:block;
+                width:100%;
+                max-width:350px;
+                height:250px;
+                margin:0 auto;
+                object-fit:contain;
+                border:1px solid #ddd;
+                border-radius:10px;
+                background:#f8f8f8;
+                cursor:pointer;
+              "
+              onclick="
+                window.open(
+                  '${echapperHTML(urlPhoto)}',
+                  '_blank'
+                )
+              "
+              onerror="
+                this.style.display='none';
+                document.getElementById(
+                  'erreurPhoto-${proposition.id}'
+                ).style.display='block';
+              "
+            >
+
+
+            <div
+              id="erreurPhoto-${proposition.id}"
+              style="
+                display:none;
+                padding:20px;
+                color:#777;
+              "
+            >
+
+              ⚠️ La photo existe mais
+              ne peut pas être affichée.
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+      else {
+
+        blocPhoto = `
+
+          <div
+            class="message"
+            style="
+              margin-bottom:20px;
+              text-align:center;
+            "
+          >
+
+            📷 Aucune photo fournie.
+
+          </div>
+
+        `;
+
+      }
+
+
+      card.innerHTML = `
+
+        ${blocPhoto}
+
+
+        <h3>
+
+          ${echapperHTML(
+            proposition.nom_consommable
+          )}
+
+        </h3>
 
 
         <p>
@@ -4048,7 +4089,6 @@ async function afficherPropositionsUtilisateur(
 
         ${
           proposition.description
-
           ?
 
           `
@@ -4085,8 +4125,7 @@ async function afficherPropositionsUtilisateur(
 
 
         ${
-          proposition.statut ===
-          "en_attente"
+          proposition.statut === "en_attente"
 
           ?
 
@@ -4131,7 +4170,6 @@ async function afficherPropositionsUtilisateur(
         }
 
       `;
-
 
       zone.appendChild(card);
 
