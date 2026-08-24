@@ -656,311 +656,6 @@
       </form>
 
     </div>
-/* =========================================================
-   PHOTO — CAMÉRA PROPOSITION
-   ========================================================= */
-
-let fluxCameraProposition = null;
-
-
-/* OUVRIR LA CAMÉRA */
-
-document
-  .getElementById(
-    "boutonPrendrePhotoProposition"
-  )
-  ?.addEventListener(
-    "click",
-    async function() {
-
-      const zoneCamera =
-        document.getElementById(
-          "zoneCameraProposition"
-        );
-
-      const video =
-        document.getElementById(
-          "videoCameraProposition"
-        );
-
-
-      try {
-
-        fluxCameraProposition =
-          await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: "environment"
-            },
-            audio: false
-          });
-
-
-        video.srcObject =
-          fluxCameraProposition;
-
-
-        zoneCamera.style.display =
-          "block";
-
-      }
-
-      catch (erreur) {
-
-        console.error(
-          "Erreur accès caméra proposition :",
-          erreur
-        );
-
-        alert(
-          "Impossible d'accéder à la caméra. Vérifiez que votre navigateur a l'autorisation d'utiliser la caméra."
-        );
-
-      }
-
-    }
-  );
-
-
-/* CAPTURER LA PHOTO */
-
-document
-  .getElementById(
-    "boutonCapturerPhotoProposition"
-  )
-  ?.addEventListener(
-    "click",
-    function() {
-
-      const video =
-        document.getElementById(
-          "videoCameraProposition"
-        );
-
-      const canvas =
-        document.getElementById(
-          "canvasPhotoProposition"
-        );
-
-
-      if (
-        !video.videoWidth ||
-        !video.videoHeight
-      ) {
-
-        return;
-
-      }
-
-
-      canvas.width =
-        video.videoWidth;
-
-      canvas.height =
-        video.videoHeight;
-
-
-      const contexte =
-        canvas.getContext(
-          "2d"
-        );
-
-
-      contexte.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-
-      canvas.toBlob(
-        function(blob) {
-
-          if (!blob) {
-            return;
-          }
-
-
-          const fichier =
-            new File(
-              [
-                blob
-              ],
-              "photo-proposition.jpg",
-              {
-                type:
-                  "image/jpeg"
-              }
-            );
-
-
-          /*
-           * Utiliser le même input
-           * que le système existant.
-           */
-
-          const input =
-            document.getElementById(
-              "photoProposition"
-            );
-
-
-          const transfert =
-            new DataTransfer();
-
-
-          transfert.items.add(
-            fichier
-          );
-
-
-          input.files =
-            transfert.files;
-
-
-          /*
-           * Aperçu
-           */
-
-          const apercu =
-            document.getElementById(
-              "apercuPhotoProposition"
-            );
-
-          const image =
-            document.getElementById(
-              "imageApercuProposition"
-            );
-
-
-          image.src =
-            URL.createObjectURL(
-              fichier
-            );
-
-
-          apercu.style.display =
-            "block";
-
-
-          fermerCameraProposition();
-
-        },
-        "image/jpeg",
-        0.9
-      );
-
-    }
-  );
-
-
-/* FERMER LA CAMÉRA */
-
-document
-  .getElementById(
-    "boutonFermerCameraProposition"
-  )
-  ?.addEventListener(
-    "click",
-    function() {
-
-      fermerCameraProposition();
-
-    }
-  );
-
-
-function fermerCameraProposition() {
-
-  if (
-    fluxCameraProposition
-  ) {
-
-    fluxCameraProposition
-      .getTracks()
-      .forEach(
-        track => track.stop()
-      );
-
-    fluxCameraProposition =
-      null;
-
-  }
-
-
-  const video =
-    document.getElementById(
-      "videoCameraProposition"
-    );
-
-
-  if (video) {
-
-    video.srcObject =
-      null;
-
-  }
-
-
-  const zoneCamera =
-    document.getElementById(
-      "zoneCameraProposition"
-    );
-
-
-  if (zoneCamera) {
-
-    zoneCamera.style.display =
-      "none";
-
-  }
-
-}
-
-
-/* APERÇU D'UNE PHOTO CHOISIE
-   DEPUIS LE PC / TÉLÉPHONE */
-
-document
-  .getElementById(
-    "photoProposition"
-  )
-  ?.addEventListener(
-    "change",
-    function() {
-
-      const fichier =
-        this.files[0];
-
-
-      if (!fichier) {
-        return;
-      }
-
-
-      const apercu =
-        document.getElementById(
-          "apercuPhotoProposition"
-        );
-
-      const image =
-        document.getElementById(
-          "imageApercuProposition"
-        );
-
-
-      image.src =
-        URL.createObjectURL(
-          fichier
-        );
-
-
-      apercu.style.display =
-        "block";
-
-    }
-  );
 
     <!-- MES PROPOSITIONS -->
 
@@ -4358,7 +4053,255 @@ window.addEventListener("scroll", function() {
   }
 
 });
+/* =========================================================
+   PHOTO — CAMÉRA PROPOSITION
+   ========================================================= */
 
+let fluxCameraProposition = null;
+
+
+/* OUVRIR LA CAMÉRA */
+
+document
+  .getElementById("boutonPrendrePhotoProposition")
+  ?.addEventListener("click", async function () {
+
+    const zoneCamera =
+      document.getElementById(
+        "zoneCameraProposition"
+      );
+
+    const video =
+      document.getElementById(
+        "videoCameraProposition"
+      );
+
+    try {
+
+      fluxCameraProposition =
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment"
+          },
+          audio: false
+        });
+
+      video.srcObject =
+        fluxCameraProposition;
+
+      zoneCamera.style.display =
+        "block";
+
+    }
+
+    catch (erreur) {
+
+      console.error(
+        "Erreur caméra :",
+        erreur
+      );
+
+      alert(
+        "Impossible d'accéder à la caméra. Vérifiez l'autorisation de la caméra."
+      );
+
+    }
+
+  });
+
+
+/* CAPTURER */
+
+document
+  .getElementById("boutonCapturerPhotoProposition")
+  ?.addEventListener("click", function () {
+
+    const video =
+      document.getElementById(
+        "videoCameraProposition"
+      );
+
+    const canvas =
+      document.getElementById(
+        "canvasPhotoProposition"
+      );
+
+    if (
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
+      return;
+    }
+
+    canvas.width =
+      video.videoWidth;
+
+    canvas.height =
+      video.videoHeight;
+
+    const contexte =
+      canvas.getContext("2d");
+
+    contexte.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    canvas.toBlob(
+      function (blob) {
+
+        if (!blob) {
+          return;
+        }
+
+        const fichier =
+          new File(
+            [blob],
+            "photo-proposition.jpg",
+            {
+              type: "image/jpeg"
+            }
+          );
+
+        const input =
+          document.getElementById(
+            "photoProposition"
+          );
+
+        const transfert =
+          new DataTransfer();
+
+        transfert.items.add(
+          fichier
+        );
+
+        input.files =
+          transfert.files;
+
+
+        /* APERÇU */
+
+        const apercu =
+          document.getElementById(
+            "apercuPhotoProposition"
+          );
+
+        const image =
+          document.getElementById(
+            "imageApercuProposition"
+          );
+
+        image.src =
+          URL.createObjectURL(
+            fichier
+          );
+
+        apercu.style.display =
+          "block";
+
+
+        fermerCameraProposition();
+
+      },
+      "image/jpeg",
+      0.9
+    );
+
+  });
+
+
+/* FERMER LA CAMÉRA */
+
+document
+  .getElementById("boutonFermerCameraProposition")
+  ?.addEventListener("click", function () {
+
+    fermerCameraProposition();
+
+  });
+
+
+function fermerCameraProposition() {
+
+  if (fluxCameraProposition) {
+
+    fluxCameraProposition
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+    fluxCameraProposition =
+      null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "videoCameraProposition"
+    );
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+  }
+
+
+  const zoneCamera =
+    document.getElementById(
+      "zoneCameraProposition"
+    );
+
+  if (zoneCamera) {
+
+    zoneCamera.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* =========================================================
+   PHOTO CHOISIE DEPUIS PC / TÉLÉPHONE
+   ========================================================= */
+
+document
+  .getElementById("photoProposition")
+  ?.addEventListener("change", function () {
+
+    const fichier =
+      this.files[0];
+
+    if (!fichier) {
+      return;
+    }
+
+    const apercu =
+      document.getElementById(
+        "apercuPhotoProposition"
+      );
+
+    const image =
+      document.getElementById(
+        "imageApercuProposition"
+      );
+
+    image.src =
+      URL.createObjectURL(
+        fichier
+      );
+
+    apercu.style.display =
+      "block";
+
+  });
 </script>
   
 </body>
