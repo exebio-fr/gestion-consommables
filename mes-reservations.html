@@ -190,6 +190,7 @@ async function chargerReservations() {
   date_retour,
   commentaire,
   statut,
+  type_demande,
   consommable_id,
   quantite,
   quantite_retournee
@@ -324,23 +325,26 @@ ${
 </p>
 
 ${
+  reservation.type_demande === "pret" &&
   (
     reservation.statut === "acceptee" ||
     reservation.statut === "retour_partiel"
-  )
-  &&
-  reservation.quantite_retournee < reservation.quantite
+  ) &&
+  Number(reservation.quantite_retournee || 0) <
+  Number(reservation.quantite || 0)
 
   ? `
     <div class="actions">
 
       <button
         onclick="signalerRetour('${reservation.id}')">
+
         ${
           reservation.statut === "retour_partiel"
             ? "Signaler le retour du reste"
             : "Signaler le retour"
         }
+
       </button>
 
     </div>
