@@ -10088,7 +10088,44 @@ async function chargerNotifications() {
     }
 
   }
+  /*
+   * NOTIFICATIONS
+   */
 
+  const badgeNotifications =
+    document.getElementById(
+      "badge-notifications"
+    );
+
+
+  if (badgeNotifications) {
+
+    const nombreNotifications =
+      notifications.filter(
+        notification =>
+          notification.lu === false
+      ).length;
+
+
+    if (nombreNotifications > 0) {
+
+      badgeNotifications.textContent =
+        nombreNotifications > 99
+          ? "99+"
+          : nombreNotifications;
+
+      badgeNotifications.style.display =
+        "block";
+
+    }
+    else {
+
+      badgeNotifications.style.display =
+        "none";
+
+    }
+
+  }
 }
 /* =========================================================
    OUVRIR LES NOTIFICATIONS
