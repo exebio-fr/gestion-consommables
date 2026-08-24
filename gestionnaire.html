@@ -944,10 +944,27 @@
   class="section">
 
   <h2>
-    Suivi des retours
-  </h2>
+  Suivi des retours
+</h2>
 
- <div id="listeSuiviRetours">
+<button
+  type="button"
+  onclick="telechargerSuiviRetoursExcel()"
+  style="
+    margin: 10px 0 20px 0;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #217346;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  "
+>
+  📥 Télécharger le suivi en Excel
+</button>
+
+<div id="listeSuiviRetours">
 
   <div class="message">
     Chargement du suivi des retours...
@@ -9345,6 +9362,237 @@ async function chargerSuiviRetours() {
 
   }
 );
+}
+  async function telechargerSuiviRetoursExcel() {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("Réservations")
+      .select(`
+        id,
+        date_demande,
+        date_debut,
+        date_retour,
+        date_retour_reel,
+        statut,
+        quantite,
+        quantite_retournee,
+
+        Profils!Réservations_utilisateur_id_fkey (
+          nom,
+          prenom,
+          service
+        ),
+
+        Consommables!Réservations_consommable_id_fkey (
+          "Nom du sortant",
+          Categorie,
+          Laboratoire,
+          Etat
+        )
+      `)
+      .in(
+        "statut",
+        [
+          "acceptee",
+          "retour_signale",
+          "retour_partiel",
+          "retournee"
+        ]
+      )
+      .eq(
+        "type_demande",
+        "pret"
+      )
+      .order(
+        "date_retour",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(
+      "Erreur export suivi retours :",
+      error
+    );
+
+    alert(
+      "Impossible de télécharger le suivi des retours : " +
+      error.message
+    );
+
+    return;
+  }
+
+
+  if (!data || data.length === 0) {
+
+    alert(
+      "Aucun retour à exporter."
+    );
+
+    return;
+  }
+
+
+  const lignes =
+    data.map(
+      reservation => {
+
+        const quantite =
+          Number(
+            reservation.quantite
+          ) || 0;
+
+
+        const quantiteRetournee =
+          Number(
+            reservation.quantite_retournee
+          ) || 0;
+
+
+        let statutTexte =
+          reservation.statut;
+
+
+        if (
+          reservation.statut ===
+          "acceptee"
+        ) {
+
+          statutTexte =
+            "En prêt";
+
+        }
+
+        else if (
+          reservation.statut ===
+          "retour_signale"
+        ) {
+
+          statutTexte =
+            "Retour signalé";
+
+        }
+
+        else if (
+          reservation.statut ===
+          "retour_partiel"
+        ) {
+
+          statutTexte =
+            "Retour partiel";
+
+        }
+
+        else if (
+          reservation.statut ===
+          "retournee"
+        ) {
+
+          statutTexte =
+            "Retour complet";
+
+        }
+
+
+        const nomUtilisateur =
+          `${
+            reservation.Profils?.prenom ||
+            ""
+          } ${
+            reservation.Profils?.nom ||
+            ""
+          }`.trim();
+
+
+        return {
+
+          "Consommable":
+            reservation.Consommables?.[
+              "Nom du sortant"
+            ] ||
+            "Consommable",
+
+          "Demandeur":
+            nomUtilisateur ||
+            "Utilisateur",
+
+          "Service":
+            reservation.Profils?.service ||
+            "Non renseigné",
+
+          "Quantité":
+            quantite,
+
+          "Date de début":
+            reservation.date_debut ||
+            "",
+
+          "Date de retour prévue":
+            reservation.date_retour ||
+            "",
+
+          "Date de retour réelle":
+            reservation.date_retour_reel ||
+            "",
+
+          "Quantité retournée":
+            quantiteRetournee,
+
+          "État":
+            reservation.Consommables?.Etat ||
+            "",
+
+          "Statut":
+            statutTexte
+
+        };
+
+      }
+    );
+
+
+  if (
+    typeof XLSX === "undefined"
+  ) {
+
+    alert(
+      "La bibliothèque Excel n'est pas disponible."
+    );
+
+    return;
+  }
+
+
+  const feuille =
+    XLSX.utils.json_to_sheet(
+      lignes
+    );
+
+
+  const classeur =
+    XLSX.utils.book_new();
+
+
+  XLSX.utils.book_append_sheet(
+    classeur,
+    feuille,
+    "Suivi des retours"
+  );
+
+
+  XLSX.writeFile(
+    classeur,
+    "suivi-retours.xlsx"
+  );
+
 }
   /* =========================================================
    SUIVI DES PRÊTS
