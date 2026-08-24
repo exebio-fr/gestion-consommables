@@ -1190,20 +1190,130 @@
 
         <div class="form-group">
 
-  <label for="photoConsommable">
+  <label>
     Photo du consommable
   </label>
+
+  <div style="
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  ">
+
+    <button
+      type="button"
+      class="nav-button"
+      id="boutonPrendrePhoto">
+
+      📷 Prendre une photo
+
+    </button>
+
+    <label
+      for="photoConsommable"
+      class="nav-button"
+      style="
+        cursor:pointer;
+        display:inline-flex;
+        align-items:center;
+      ">
+
+      📁 Choisir une photo
+
+    </label>
+
+  </div>
+
 
   <input
     type="file"
     id="photoConsommable"
-    accept="image/*">
+    accept="image/*"
+    style="display:none;">
 
-  <small>
-    Sélectionnez une photo depuis votre ordinateur ou votre téléphone.
-  </small>
+
+  <div
+    id="apercuPhotoConsommable"
+    style="
+      display:none;
+      margin-top:10px;
+    ">
+
+    <img
+      id="imageApercuConsommable"
+      alt="Aperçu de la photo"
+      style="
+        max-width:250px;
+        max-height:250px;
+        object-fit:cover;
+        border-radius:10px;
+        border:1px solid #ddd;
+      ">
+
+  </div>
 
 </div>
+
+
+<!-- =====================================================
+     CAMERA
+     ===================================================== -->
+
+<div
+  id="zoneCameraConsommable"
+  style="
+    display:none;
+    margin-top:15px;
+  ">
+
+  <video
+    id="videoCameraConsommable"
+    autoplay
+    playsinline
+    style="
+      width:100%;
+      max-width:400px;
+      border-radius:10px;
+      background:#000;
+    ">
+  </video>
+
+  <div
+    style="
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    ">
+
+    <button
+      type="button"
+      class="accept"
+      id="boutonCapturerPhoto">
+
+      📸 Capturer
+
+    </button>
+
+    <button
+      type="button"
+      class="nav-button"
+      id="boutonFermerCamera">
+
+      ❌ Fermer la caméra
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<canvas
+  id="canvasPhotoConsommable"
+  style="display:none;">
+</canvas>
 
 
         <div class="actions">
@@ -4241,7 +4351,317 @@ function fermerFormulaireAjout() {
 
 }
 
+/* =========================================================
+   PHOTO — CAMÉRA
+   ========================================================= */
 
+let fluxCameraConsommable = null;
+
+
+/* OUVRIR LA CAMÉRA */
+
+document
+  .getElementById(
+    "boutonPrendrePhoto"
+  )
+  ?.addEventListener(
+    "click",
+    async function() {
+
+      const zoneCamera =
+        document.getElementById(
+          "zoneCameraConsommable"
+        );
+
+      const video =
+        document.getElementById(
+          "videoCameraConsommable"
+        );
+
+
+      try {
+
+        fluxCameraConsommable =
+          await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment"
+            },
+            audio: false
+          });
+
+
+        video.srcObject =
+          fluxCameraConsommable;
+
+
+        zoneCamera.style.display =
+          "block";
+
+      }
+
+      catch (erreur) {
+
+        console.error(
+          "Erreur accès caméra :",
+          erreur
+        );
+
+        alert(
+          "Impossible d'accéder à la caméra. Vérifiez que votre navigateur a l'autorisation d'utiliser la caméra."
+        );
+
+      }
+
+    }
+  );
+
+
+/* CAPTURER LA PHOTO */
+
+document
+  .getElementById(
+    "boutonCapturerPhoto"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      const video =
+        document.getElementById(
+          "videoCameraConsommable"
+        );
+
+      const canvas =
+        document.getElementById(
+          "canvasPhotoConsommable"
+        );
+
+
+      if (
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+
+        return;
+
+      }
+
+
+      canvas.width =
+        video.videoWidth;
+
+      canvas.height =
+        video.videoHeight;
+
+
+      const contexte =
+        canvas.getContext(
+          "2d"
+        );
+
+
+      contexte.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      canvas.toBlob(
+        function(blob) {
+
+          if (!blob) {
+            return;
+          }
+
+
+          const fichier =
+            new File(
+              [
+                blob
+              ],
+              "photo-consommable.jpg",
+              {
+                type:
+                  "image/jpeg"
+              }
+            );
+
+
+          /*
+           * On utilise la même variable
+           * que ton système actuel.
+           */
+
+          const input =
+            document.getElementById(
+              "photoConsommable"
+            );
+
+
+          const transfert =
+            new DataTransfer();
+
+
+          transfert.items.add(
+            fichier
+          );
+
+
+          input.files =
+            transfert.files;
+
+
+          /*
+           * Afficher l'aperçu
+           */
+
+          const apercu =
+            document.getElementById(
+              "apercuPhotoConsommable"
+            );
+
+          const image =
+            document.getElementById(
+              "imageApercuConsommable"
+            );
+
+
+          image.src =
+            URL.createObjectURL(
+              fichier
+            );
+
+
+          apercu.style.display =
+            "block";
+
+
+          /*
+           * Fermer automatiquement
+           * la caméra
+           */
+
+          fermerCameraConsommable();
+
+        },
+        "image/jpeg",
+        0.9
+      );
+
+    }
+  );
+
+
+/* FERMER LA CAMÉRA */
+
+document
+  .getElementById(
+    "boutonFermerCamera"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      fermerCameraConsommable();
+
+    }
+  );
+
+
+function fermerCameraConsommable() {
+
+  if (
+    fluxCameraConsommable
+  ) {
+
+    fluxCameraConsommable
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+    fluxCameraConsommable =
+      null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "videoCameraConsommable"
+    );
+
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+  }
+
+
+  const zoneCamera =
+    document.getElementById(
+      "zoneCameraConsommable"
+    );
+
+
+  if (zoneCamera) {
+
+    zoneCamera.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* APERÇU D'UNE PHOTO CHOISIE
+   DEPUIS LE PC / TÉLÉPHONE */
+
+document
+  .getElementById(
+    "photoConsommable"
+  )
+  ?.addEventListener(
+    "change",
+    function() {
+
+      const fichier =
+        this.files[0];
+
+
+      if (!fichier) {
+        return;
+      }
+
+
+      const apercu =
+        document.getElementById(
+          "apercuPhotoConsommable"
+        );
+
+      const image =
+        document.getElementById(
+          "imageApercuConsommable"
+        );
+
+
+      image.src =
+        URL.createObjectURL(
+          fichier
+        );
+
+
+      apercu.style.display =
+        "block";
+
+    }
+  );
+  
 /* =========================================================
    PROFIL GESTIONNAIRE
    ========================================================= */
