@@ -511,23 +511,134 @@
         </div>
 
 
-        <div class="form-group">
+       <div class="form-group">
 
-  <label for="photoProposition">
+  <label>
     Photo du consommable
   </label>
+
+  <div style="
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  ">
+
+    <button
+      type="button"
+      class="nav-button"
+      id="boutonPrendrePhotoProposition">
+
+      📷 Prendre une photo
+
+    </button>
+
+    <label
+      for="photoProposition"
+      class="nav-button"
+      style="
+        cursor:pointer;
+        display:inline-flex;
+        align-items:center;
+      ">
+
+      📁 Choisir une photo
+
+    </label>
+
+  </div>
+
 
   <input
     type="file"
     id="photoProposition"
     accept="image/*"
+    style="display:none;"
   >
 
-  <small>
-    Sélectionnez une photo depuis votre téléphone ou votre ordinateur.
-  </small>
+
+  <div
+    id="apercuPhotoProposition"
+    style="
+      display:none;
+      margin-top:10px;
+    ">
+
+    <img
+      id="imageApercuProposition"
+      alt="Aperçu de la photo"
+      style="
+        max-width:250px;
+        max-height:250px;
+        object-fit:cover;
+        border-radius:10px;
+        border:1px solid #ddd;
+      "
+    >
+
+  </div>
 
 </div>
+
+
+<!-- =====================================================
+     CAMERA PROPOSITION
+     ===================================================== -->
+
+<div
+  id="zoneCameraProposition"
+  style="
+    display:none;
+    margin-top:15px;
+  ">
+
+  <video
+    id="videoCameraProposition"
+    autoplay
+    playsinline
+    style="
+      width:100%;
+      max-width:400px;
+      border-radius:10px;
+      background:#000;
+    ">
+  </video>
+
+  <div
+    style="
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    ">
+
+    <button
+      type="button"
+      class="accept"
+      id="boutonCapturerPhotoProposition">
+
+      📸 Capturer
+
+    </button>
+
+    <button
+      type="button"
+      class="nav-button"
+      id="boutonFermerCameraProposition">
+
+      ❌ Fermer la caméra
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<canvas
+  id="canvasPhotoProposition"
+  style="display:none;">
+</canvas>
 
 
         <button
@@ -545,7 +656,311 @@
       </form>
 
     </div>
+/* =========================================================
+   PHOTO — CAMÉRA PROPOSITION
+   ========================================================= */
 
+let fluxCameraProposition = null;
+
+
+/* OUVRIR LA CAMÉRA */
+
+document
+  .getElementById(
+    "boutonPrendrePhotoProposition"
+  )
+  ?.addEventListener(
+    "click",
+    async function() {
+
+      const zoneCamera =
+        document.getElementById(
+          "zoneCameraProposition"
+        );
+
+      const video =
+        document.getElementById(
+          "videoCameraProposition"
+        );
+
+
+      try {
+
+        fluxCameraProposition =
+          await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment"
+            },
+            audio: false
+          });
+
+
+        video.srcObject =
+          fluxCameraProposition;
+
+
+        zoneCamera.style.display =
+          "block";
+
+      }
+
+      catch (erreur) {
+
+        console.error(
+          "Erreur accès caméra proposition :",
+          erreur
+        );
+
+        alert(
+          "Impossible d'accéder à la caméra. Vérifiez que votre navigateur a l'autorisation d'utiliser la caméra."
+        );
+
+      }
+
+    }
+  );
+
+
+/* CAPTURER LA PHOTO */
+
+document
+  .getElementById(
+    "boutonCapturerPhotoProposition"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      const video =
+        document.getElementById(
+          "videoCameraProposition"
+        );
+
+      const canvas =
+        document.getElementById(
+          "canvasPhotoProposition"
+        );
+
+
+      if (
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+
+        return;
+
+      }
+
+
+      canvas.width =
+        video.videoWidth;
+
+      canvas.height =
+        video.videoHeight;
+
+
+      const contexte =
+        canvas.getContext(
+          "2d"
+        );
+
+
+      contexte.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      canvas.toBlob(
+        function(blob) {
+
+          if (!blob) {
+            return;
+          }
+
+
+          const fichier =
+            new File(
+              [
+                blob
+              ],
+              "photo-proposition.jpg",
+              {
+                type:
+                  "image/jpeg"
+              }
+            );
+
+
+          /*
+           * Utiliser le même input
+           * que le système existant.
+           */
+
+          const input =
+            document.getElementById(
+              "photoProposition"
+            );
+
+
+          const transfert =
+            new DataTransfer();
+
+
+          transfert.items.add(
+            fichier
+          );
+
+
+          input.files =
+            transfert.files;
+
+
+          /*
+           * Aperçu
+           */
+
+          const apercu =
+            document.getElementById(
+              "apercuPhotoProposition"
+            );
+
+          const image =
+            document.getElementById(
+              "imageApercuProposition"
+            );
+
+
+          image.src =
+            URL.createObjectURL(
+              fichier
+            );
+
+
+          apercu.style.display =
+            "block";
+
+
+          fermerCameraProposition();
+
+        },
+        "image/jpeg",
+        0.9
+      );
+
+    }
+  );
+
+
+/* FERMER LA CAMÉRA */
+
+document
+  .getElementById(
+    "boutonFermerCameraProposition"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      fermerCameraProposition();
+
+    }
+  );
+
+
+function fermerCameraProposition() {
+
+  if (
+    fluxCameraProposition
+  ) {
+
+    fluxCameraProposition
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+    fluxCameraProposition =
+      null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "videoCameraProposition"
+    );
+
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+  }
+
+
+  const zoneCamera =
+    document.getElementById(
+      "zoneCameraProposition"
+    );
+
+
+  if (zoneCamera) {
+
+    zoneCamera.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* APERÇU D'UNE PHOTO CHOISIE
+   DEPUIS LE PC / TÉLÉPHONE */
+
+document
+  .getElementById(
+    "photoProposition"
+  )
+  ?.addEventListener(
+    "change",
+    function() {
+
+      const fichier =
+        this.files[0];
+
+
+      if (!fichier) {
+        return;
+      }
+
+
+      const apercu =
+        document.getElementById(
+          "apercuPhotoProposition"
+        );
+
+      const image =
+        document.getElementById(
+          "imageApercuProposition"
+        );
+
+
+      image.src =
+        URL.createObjectURL(
+          fichier
+        );
+
+
+      apercu.style.display =
+        "block";
+
+    }
+  );
 
     <!-- MES PROPOSITIONS -->
 
