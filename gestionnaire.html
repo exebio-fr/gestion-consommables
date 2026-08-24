@@ -3924,15 +3924,74 @@ async function afficherPropositionsUtilisateur(
         "card";
 
 
-      card.innerHTML = `
+     card.innerHTML = `
 
-        <h3>
+  ${
+    proposition.photo
 
-          ${echapperHTML(
-            proposition.nom_consommable
-          )}
+    ?
 
-        </h3>
+    `
+      <div
+        style="
+          margin-bottom:15px;
+          text-align:center;
+        "
+      >
+
+        <img
+          src="${echapperHTML(
+            proposition.photo
+          )}"
+          alt="Photo du consommable"
+          style="
+            width:100%;
+            max-width:300px;
+            max-height:300px;
+            object-fit:contain;
+            border-radius:10px;
+            border:1px solid #ddd;
+            cursor:pointer;
+          "
+          onclick="
+            window.open(
+              '${echapperHTML(
+                proposition.photo
+              )}',
+              '_blank'
+            )
+          "
+        >
+
+      </div>
+    `
+
+    :
+
+    `
+      <div
+        class="message"
+        style="
+          margin-bottom:15px;
+          text-align:center;
+        "
+      >
+
+        📷 Aucune photo fournie.
+
+      </div>
+    `
+
+  }
+
+
+  <h3>
+
+    ${echapperHTML(
+      proposition.nom_consommable
+    )}
+
+  </h3>
 
 
         <p>
