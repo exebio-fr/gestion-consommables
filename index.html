@@ -673,7 +673,134 @@
     </div>
 
   </section>
+<!-- =========================================================
+     MON PROFIL
+     ========================================================= -->
 
+<section
+  id="section-mon-profil"
+  class="section"
+  style="display:none;"
+>
+
+  <h2>
+    👤 Mon profil
+  </h2>
+
+  <div class="form-card">
+
+    <form id="formModificationProfil">
+
+      <div class="form-group">
+
+        <label for="modifierPrenom">
+          Prénom
+        </label>
+
+        <input
+          type="text"
+          id="modifierPrenom"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="modifierNom">
+          Nom
+        </label>
+
+        <input
+          type="text"
+          id="modifierNom"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="modifierService">
+          Service / Laboratoire
+        </label>
+
+        <input
+          type="text"
+          id="modifierService"
+          required
+        >
+
+      </div>
+
+
+      <hr>
+
+      <h3>
+        Modifier le mot de passe
+      </h3>
+
+      <p class="info">
+        Laissez les deux champs vides si vous ne souhaitez
+        pas modifier votre mot de passe.
+      </p>
+
+
+      <div class="form-group">
+
+        <label for="nouveauMotDePasse">
+          Nouveau mot de passe
+        </label>
+
+        <input
+          type="password"
+          id="nouveauMotDePasse"
+          autocomplete="new-password"
+          placeholder="Nouveau mot de passe"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="confirmationMotDePasse">
+          Confirmer le nouveau mot de passe
+        </label>
+
+        <input
+          type="password"
+          id="confirmationMotDePasse"
+          autocomplete="new-password"
+          placeholder="Confirmer le nouveau mot de passe"
+        >
+
+      </div>
+
+
+      <div class="actions">
+
+        <button
+          type="submit"
+          class="accept"
+        >
+          💾 Enregistrer les modifications
+        </button>
+
+      </div>
+
+
+      <div
+        id="messageModificationProfil">
+      </div>
+
+    </form>
+
+  </div>
+
+</section>
 
 </main>
 
@@ -899,6 +1026,13 @@ if (zoneActions) {
   zoneActions.innerHTML = `
 
     <button
+  type="button"
+  onclick="afficherSection('section-mon-profil')"
+>
+  👤 Mon profil
+</button>
+
+<button
       onclick="supprimerCompte()"
     >
       Supprimer mon compte
@@ -4302,7 +4436,389 @@ document
       "block";
 
   });
+/* =========================================================
+   MODIFICATION DU PROFIL UTILISATEUR
+   ========================================================= */
+
+async function chargerFormulaireModificationProfil() {
+
+  const {
+    user,
+    profil
+  } = await obtenirUtilisateurEtProfil();
+
+  if (!user || !profil) {
+    return;
+  }
+
+  const prenom =
+    document.getElementById("profilPrenom");
+
+  const nom =
+    document.getElementById("profilNom");
+
+  const service =
+    document.getElementById("profilService");
+
+  if (prenom) {
+    prenom.value =
+      profil.prenom || "";
+  }
+
+  if (nom) {
+    nom.value =
+      profil.nom || "";
+  }
+
+  if (service) {
+    service.value =
+      profil.service || "";
+  }
+
+}
+
+
+/* =========================================================
+   ENREGISTRER LES MODIFICATIONS
+   ========================================================= */
+
+document
+  .getElementById("formModificationProfil")
+  ?.addEventListener(
+    "submit",
+    async function(event) {
+
+      event.preventDefault();
+
+      const zone =
+        document.getElementById(
+          "messageModificationProfil"
+        );
+
+      const prenom =
+        document
+          .getElementById("profilPrenom")
+          .value
+          .trim();
+
+      const nom =
+        document
+          .getElementById("profilNom")
+          .value
+          .trim();
+
+      const service =
+        document
+          .getElementById("profilService")
+          .value
+          .trim();
+
+      const nouveauMotDePasse =
+        document
+          .getElementById("nouveauMotDePasse")
+          .value;
+
+      const confirmation =
+        document
+          .getElementById("confirmationMotDePasse")
+          .value;
+
+
+      /* Vérification */
+
+      if (!prenom || !nom) {
+
+        zone.innerHTML = `
+          <div class="error-box">
+            Le prénom et le nom sont obligatoires.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      if (
+        nouveauMotDePasse &&
+        nouveauMotDePasse !== confirmation
+      ) {
+
+        zone.innerHTML = `
+          <div class="error-box">
+            Les deux mots de passe ne correspondent pas.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      if (
+        nouveauMotDePasse &&
+        nouveauMotDePasse.length < 6
+      ) {
+
+        zone.innerHTML = `
+          <div class="error-box">
+            Le nouveau mot de passe doit contenir
+            au moins 6 caractères.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      zone.innerHTML = `
+        <div class="info">
+          Enregistrement en cours...
+        </div>
+      `;
+
+
+      try {
+
+        const {
+          data: { user },
+          error: erreurUtilisateur
+        } =
+          await supabaseClient.auth.getUser();
+
+
+        if (
+          erreurUtilisateur ||
+          !user
+        ) {
+
+          throw new Error(
+            "Utilisateur non connecté."
+          );
+
+        }
+
+
+        /* Modifier le profil */
+
+        const {
+          error: erreurProfil
+        } =
+          await supabaseClient
+            .from("Profils")
+            .update({
+
+              prenom:
+                prenom,
+
+              nom:
+                nom,
+
+              service:
+                service || null
+
+            })
+            .eq(
+              "user_id",
+              user.id
+            );
+
+
+        if (erreurProfil) {
+          throw erreurProfil;
+        }
+
+
+        /* Modifier le mot de passe si demandé */
+
+        if (nouveauMotDePasse) {
+
+          const {
+            error: erreurMotDePasse
+          } =
+            await supabaseClient.auth.updateUser({
+
+              password:
+                nouveauMotDePasse
+
+            });
+
+
+          if (erreurMotDePasse) {
+            throw erreurMotDePasse;
+          }
+
+        }
+
+
+        zone.innerHTML = `
+          <div class="success-box">
+            ✅ Vos informations ont été modifiées avec succès.
+          </div>
+        `;
+
+
+        /*
+         * Nettoyer uniquement
+         * les champs du mot de passe
+         */
+
+        document
+          .getElementById(
+            "nouveauMotDePasse"
+          )
+          .value = "";
+
+        document
+          .getElementById(
+            "confirmationMotDePasse"
+          )
+          .value = "";
+
+
+        /* Actualiser l'affichage du nom */
+
+        await afficherUtilisateur();
+
+
+      }
+      catch (erreur) {
+
+        console.error(
+          "Erreur modification profil :",
+          erreur
+        );
+
+        zone.innerHTML = `
+          <div class="error-box">
+            Impossible de modifier le profil.
+            <br><br>
+            ${echapperHTML(
+              erreur.message ||
+              "Erreur inconnue."
+            )}
+          </div>
+        `;
+
+      }
+
+    }
+  );
+  function afficherSection(idSection) {
+
+  const sections =
+    document.querySelectorAll(".section");
+
+  sections.forEach(function(section) {
+    section.style.display = "none";
+  });
+
+
+  const section =
+    document.getElementById(idSection);
+
+  if (!section) {
+    return;
+  }
+
+  section.style.display = "block";
+
+
+  if (
+    idSection === "section-mon-profil"
+  ) {
+
+    chargerFormulaireModificationProfil();
+
+  }
+
+}  
+    
 </script>
+ <section
+  id="section-mon-profil"
+  class="section"
+  style="display:none;">
+
+  <h2>👤 Mon profil</h2>
+
+  <div class="form-card">
+
+    <form id="formModificationProfil">
+
+      <div class="form-group">
+        <label for="profilPrenom">Prénom</label>
+
+        <input
+          type="text"
+          id="profilPrenom"
+          required>
+      </div>
+
+
+      <div class="form-group">
+        <label for="profilNom">Nom</label>
+
+        <input
+          type="text"
+          id="profilNom"
+          required>
+      </div>
+
+
+      <div class="form-group">
+        <label for="profilService">
+          Service / Laboratoire
+        </label>
+
+        <input
+          type="text"
+          id="profilService">
+      </div>
+
+
+      <h3>Modifier le mot de passe</h3>
+
+      <div class="form-group">
+        <label for="nouveauMotDePasse">
+          Nouveau mot de passe
+        </label>
+
+        <input
+          type="password"
+          id="nouveauMotDePasse"
+          autocomplete="new-password">
+      </div>
+
+
+      <div class="form-group">
+        <label for="confirmationMotDePasse">
+          Confirmer le nouveau mot de passe
+        </label>
+
+        <input
+          type="password"
+          id="confirmationMotDePasse"
+          autocomplete="new-password">
+      </div>
+
+
+      <div class="actions">
+
+        <button
+          type="submit"
+          class="accept">
+          Enregistrer les modifications
+        </button>
+
+      </div>
+
+
+      <div id="messageModificationProfil"></div>
+
+    </form>
+
+  </div>
+
+</section>
   
 </body>
 
