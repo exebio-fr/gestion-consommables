@@ -1,1 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
 
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Mon profil</title>
+
+</head>
+
+
+<body>
+
+  <main>
+
+    <div class="form-card">
+
+      <h1>
+        👤 Mon profil
+      </h1>
+
+
+      <form id="formModificationProfil">
+
+        <div class="form-group">
+
+          <label for="profilPrenom">
+            Prénom
+          </label>
+
+          <input
+            type="text"
+            id="profilPrenom"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="profilNom">
+            Nom
+          </label>
+
+          <input
+            type="text"
+            id="profilNom"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="profilService">
+            Service / Laboratoire
+          </label>
+
+          <input
+            type="text"
+            id="profilService"
+          >
+
+        </div>
+
+
+        <hr>
+
+
+        <h2>
+          🔐 Modifier le mot de passe
+        </h2>
+
+
+        <div class="form-group">
+
+          <label for="nouveauMotDePasse">
+            Nouveau mot de passe
+          </label>
+
+          <input
+            type="password"
+            id="nouveauMotDePasse"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="confirmationMotDePasse">
+            Confirmer le nouveau mot de passe
+          </label>
+
+          <input
+            type="password"
+            id="confirmationMotDePasse"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            type="submit"
+            class="accept"
+          >
+            💾 Enregistrer les modifications
+          </button>
+
+
+          <button
+            type="button"
+            onclick="window.location.href='utilisateur.html'"
+          >
+            ← Retour
+          </button>
+
+        </div>
+
+
+        <div
+          id="messageModificationProfil">
+        </div>
+
+      </form>
+
+    </div>
+
+  </main>
+
+
+  <!-- SUPABASE -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+
+    const SUPABASE_URL =
+      "https://zqgoeskiwkyelsgzebyl.supabase.co";
+
+
+    const SUPABASE_ANON_KEY =
+      "TON_SUPABASE_ANON_KEY";
+
+
+    const supabaseClient =
+      supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+
+    /* =========================================================
+       CHARGER LE PROFIL
+       ========================================================= */
+
+    async function chargerProfil() {
+
+      const {
+        data: {
+          user
+        },
+        error: erreurUtilisateur
+      } =
+        await supabaseClient.auth.getUser();
+
+
+      if (
+        erreurUtilisateur ||
+        !user
+      ) {
+
+        window.location.href =
+          "connexion.html";
+
+        return;
+
+      }
+
+
+      const {
+        data: profil,
+        error: erreurProfil
+      } =
+        await supabaseClient
+          .from("Profils")
+          .select(`
+            prenom,
+            nom,
+            service
+          `)
+          .eq(
+            "user_id",
+            user.id
+          )
+          .single();
+
+
+      if (erreurProfil) {
+
+        console.error(
+          "Erreur profil :",
+          erreurProfil
+        );
+
+        return;
+
+      }
+
+
+      document.getElementById(
+        "profilPrenom"
+      ).value =
+        profil.prenom || "";
+
+
+      document.getElementById(
+        "profilNom"
+      ).value =
+        profil.nom || "";
+
+
+      document.getElementById(
+        "profilService"
+      ).value =
+        profil.service || "";
+
+    }
+
+
+    /* =========================================================
+       ENREGISTRER
+       ========================================================= */
+
+    document
+      .getElementById(
+        "formModificationProfil"
+      )
+      .addEventListener(
+        "submit",
+        async function(event) {
+
+          event.preventDefault();
+
+
+          const message =
+            document.getElementById(
+              "messageModificationProfil"
+            );
+
+
+          const prenom =
+            document.getElementById(
+              "profilPrenom"
+            ).value.trim();
+
+
+          const nom =
+            document.getElementById(
+              "profilNom"
+            ).value.trim();
+
+
+          const service =
+            document.getElementById(
+              "profilService"
+            ).value.trim();
+
+
+          const nouveauMotDePasse =
+            document.getElementById(
+              "nouveauMotDePasse"
+            ).value;
+
+
+          const confirmation =
+            document.getElementById(
+              "confirmationMotDePasse"
+            ).value;
+
+
+          if (!prenom || !nom) {
+
+            message.innerHTML = `
+              <div class="error-box">
+                Le prénom et le nom sont obligatoires.
+              </div>
+            `;
+
+            return;
+
+          }
+
+
+          if (
+            nouveauMotDePasse &&
+            nouveauMotDePasse !== confirmation
+          ) {
+
+            message.innerHTML = `
+              <div class="error-box">
+                Les deux mots de passe ne correspondent pas.
+              </div>
+            `;
+
+            return;
+
+          }
+
+
+          if (
+            nouveauMotDePasse &&
+            nouveauMotDePasse.length < 6
+          ) {
+
+            message.innerHTML = `
+              <div class="error-box">
+                Le nouveau mot de passe doit contenir
+                au moins 6 caractères.
+              </div>
+            `;
+
+            return;
+
+          }
+
+
+          message.innerHTML = `
+            <div class="info">
+              Enregistrement en cours...
+            </div>
+          `;
+
+
+          try {
+
+            const {
+              data: {
+                user
+              },
+              error: erreurUtilisateur
+            } =
+              await supabaseClient.auth.getUser();
+
+
+            if (
+              erreurUtilisateur ||
+              !user
+            ) {
+
+              throw new Error(
+                "Utilisateur non connecté."
+              );
+
+            }
+
+
+            /* Modifier le profil */
+
+            const {
+              error: erreurProfil
+            } =
+              await supabaseClient
+                .from("Profils")
+                .update({
+
+                  prenom:
+                    prenom,
+
+                  nom:
+                    nom,
+
+                  service:
+                    service || null
+
+                })
+                .eq(
+                  "user_id",
+                  user.id
+                );
+
+
+            if (erreurProfil) {
+              throw erreurProfil;
+            }
+
+
+            /* Modifier le mot de passe */
+
+            if (nouveauMotDePasse) {
+
+              const {
+                error: erreurMotDePasse
+              } =
+                await supabaseClient.auth.updateUser({
+
+                  password:
+                    nouveauMotDePasse
+
+                });
+
+
+              if (erreurMotDePasse) {
+                throw erreurMotDePasse;
+              }
+
+            }
+
+
+            message.innerHTML = `
+              <div class="success-box">
+                ✅ Vos informations ont été modifiées avec succès.
+              </div>
+            `;
+
+
+            document.getElementById(
+              "nouveauMotDePasse"
+            ).value = "";
+
+
+            document.getElementById(
+              "confirmationMotDePasse"
+            ).value = "";
+
+          }
+
+          catch (erreur) {
+
+            console.error(
+              "Erreur modification profil :",
+              erreur
+            );
+
+            message.innerHTML = `
+              <div class="error-box">
+                Impossible de modifier le profil.
+                <br><br>
+                ${erreur.message}
+              </div>
+            `;
+
+          }
+
+        }
+      );
+
+
+    /* Charger automatiquement */
+
+    chargerProfil();
+
+  </script>
+
+</body>
+
+</html>
