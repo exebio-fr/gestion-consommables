@@ -1888,15 +1888,156 @@
 
       <div class="form-group">
 
-        <label>
-          Photo URL
-        </label>
+  <label>
+    Photo du consommable
+  </label>
 
-        <input
-          type="url"
-          id="editPhoto">
 
-      </div>
+  <!-- URL existante -->
+
+  <input
+    type="url"
+    id="editPhoto"
+    placeholder="URL de la photo (facultatif)"
+  >
+
+
+  <small>
+    Vous pouvez utiliser une URL ou ajouter une nouvelle photo.
+  </small>
+
+
+  <div
+    class="actions"
+    style="margin-top:10px;"
+  >
+
+    <!-- Choisir une image -->
+
+    <label
+      for="editPhotoFichier"
+      class="nav-button"
+      style="cursor:pointer;"
+    >
+
+      🖼️ Choisir une image
+
+    </label>
+
+    <input
+      type="file"
+      id="editPhotoFichier"
+      accept="image/*"
+      style="display:none;"
+    >
+
+
+    <!-- Prendre une photo -->
+
+    <button
+      type="button"
+      class="nav-button"
+      id="boutonPrendrePhotoModification"
+    >
+
+      📷 Prendre une photo
+
+    </button>
+
+  </div>
+
+
+  <!-- Zone caméra -->
+
+  <div
+    id="zoneCameraModification"
+    style="
+      display:none;
+      margin-top:15px;
+      text-align:center;
+    "
+  >
+
+    <video
+      id="videoCameraModification"
+      autoplay
+      playsinline
+      style="
+        width:100%;
+        max-width:400px;
+        border-radius:10px;
+      "
+    ></video>
+
+
+    <div
+      class="actions"
+      style="margin-top:10px;"
+    >
+
+      <button
+        type="button"
+        class="accept"
+        id="boutonCapturerPhotoModification"
+      >
+
+        📸 Capturer
+
+      </button>
+
+
+      <button
+        type="button"
+        class="nav-button"
+        id="boutonFermerCameraModification"
+      >
+
+        Fermer la caméra
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <canvas
+    id="canvasPhotoModification"
+    style="display:none;"
+  ></canvas>
+
+
+  <!-- Aperçu -->
+
+  <div
+    id="apercuPhotoModification"
+    style="
+      display:none;
+      margin-top:15px;
+      text-align:center;
+    "
+  >
+
+    <p>
+      <strong>Aperçu :</strong>
+    </p>
+
+    <img
+      id="imageApercuModification"
+      alt="Aperçu de la photo"
+      style="
+        width:100%;
+        max-width:300px;
+        max-height:300px;
+        object-fit:contain;
+        border-radius:10px;
+        border:1px solid #ddd;
+      "
+    >
+
+  </div>
+
+</div>
 
 
       <div class="form-group">
@@ -5468,7 +5609,27 @@ async function chargerConsommables() {
 async function ouvrirModificationConsommable(
   id
 ) {
+  /* Réinitialiser une éventuelle nouvelle photo */
+  fichierPhotoModification = null;
 
+  const inputPhoto =
+    document.getElementById(
+      "editPhotoFichier"
+    );
+
+  if (inputPhoto) {
+    inputPhoto.value = "";
+  }
+
+
+  const apercu =
+    document.getElementById(
+      "apercuPhotoModification"
+    );
+
+  if (apercu) {
+    apercu.style.display = "none";
+  }
   const {
     data,
     error
@@ -5577,63 +5738,231 @@ document
       event.preventDefault();
 
 
+      const message =
+        document.getElementById(
+          "messageModificationConsommable"
+        );
+
+
       const id =
         document.getElementById(
           "editConsommableId"
         ).value;
 
 
+      /*
+       * Récupérer les informations du formulaire
+       */
+
+      const nom =
+        document.getElementById(
+          "editNom"
+        ).value.trim();
+
+
+      const categorie =
+        document.getElementById(
+          "editCategorie"
+        ).value.trim();
+
+
+      const description =
+        document.getElementById(
+          "editDescription"
+        ).value.trim();
+
+
+      const quantite =
+        parseInt(
+          document.getElementById(
+            "editQuantite"
+          ).value,
+          10
+        );
+
+
+      const laboratoire =
+        document.getElementById(
+          "editLaboratoire"
+        ).value.trim();
+
+
+      const etat =
+        document.getElementById(
+          "editEtat"
+        ).value;
+
+
+      const disponible =
+        document.getElementById(
+          "editDisponible"
+        ).value === "true";
+
+
+      /*
+       * URL actuelle
+       */
+
+      let urlPhoto =
+        document.getElementById(
+          "editPhoto"
+        ).value.trim() ||
+        null;
+
+
+      /*
+       * Nouvelle photo éventuellement choisie
+       * ou prise avec la caméra.
+       */
+
+      const nouvellePhoto =
+        fichierPhotoModification ||
+        null;
+
+
+      /*
+       * Vérification de la photo
+       */
+
+      if (nouvellePhoto) {
+
+        if (
+          !nouvellePhoto.type.startsWith(
+            "image/"
+          )
+        ) {
+
+          message.innerHTML = `
+            <div class="error-box">
+              Le fichier sélectionné doit être une image.
+            </div>
+          `;
+
+          return;
+
+        }
+
+      }
+
+
+      /*
+       * Envoyer la nouvelle photo
+       * dans Supabase Storage
+       */
+
+      if (nouvellePhoto) {
+
+        const extension =
+          nouvellePhoto.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+
+        const nomFichier =
+          `${crypto.randomUUID()}.${extension}`;
+
+
+        const {
+          error: erreurUpload
+        } =
+          await supabaseClient
+            .storage
+            .from(
+              "photos-consommables"
+            )
+            .upload(
+              nomFichier,
+              nouvellePhoto,
+              {
+                cacheControl: "3600",
+                upsert: false
+              }
+            );
+
+
+        if (erreurUpload) {
+
+          console.error(
+            "Erreur upload photo :",
+            erreurUpload
+          );
+
+
+          message.innerHTML = `
+            <div class="error-box">
+              Impossible d'envoyer la photo :
+              ${echapperHTML(
+                erreurUpload.message
+              )}
+            </div>
+          `;
+
+          return;
+
+        }
+
+
+        /*
+         * Récupérer l'URL publique
+         */
+
+        const {
+          data: urlData
+        } =
+          supabaseClient
+            .storage
+            .from(
+              "photos-consommables"
+            )
+            .getPublicUrl(
+              nomFichier
+            );
+
+
+        urlPhoto =
+          urlData.publicUrl;
+
+      }
+
+
+      /*
+       * Enregistrer le consommable
+       */
+
       const {
         error
       } =
         await supabaseClient
-          .from("Consommables")
+          .from(
+            "Consommables"
+          )
           .update({
 
             "Nom du sortant":
-              document.getElementById(
-                "editNom"
-              ).value.trim(),
+              nom,
 
             Categorie:
-              document.getElementById(
-                "editCategorie"
-              ).value.trim(),
+              categorie,
 
             Description:
-              document.getElementById(
-                "editDescription"
-              ).value.trim() ||
+              description ||
               null,
 
             Quantite:
-              parseInt(
-                document.getElementById(
-                  "editQuantite"
-                ).value,
-                10
-              ),
+              quantite,
 
             Laboratoire:
-              document.getElementById(
-                "editLaboratoire"
-              ).value.trim(),
+              laboratoire,
 
             Etat:
-              document.getElementById(
-                "editEtat"
-              ).value,
+              etat,
 
             photo:
-              document.getElementById(
-                "editPhoto"
-              ).value.trim() ||
-              null,
+              urlPhoto,
 
             disponible:
-              document.getElementById(
-                "editDisponible"
-              ).value === "true"
+              disponible
 
           })
           .eq(
@@ -5642,17 +5971,23 @@ document
           );
 
 
-      const message =
-        document.getElementById(
-          "messageModificationConsommable"
-        );
-
+      /*
+       * Erreur Supabase
+       */
 
       if (error) {
 
+        console.error(
+          "Erreur modification consommable :",
+          error
+        );
+
+
         message.innerHTML = `
           <div class="error-box">
-            ${echapperHTML(error.message)}
+            ${echapperHTML(
+              error.message
+            )}
           </div>
         `;
 
@@ -5661,6 +5996,10 @@ document
       }
 
 
+      /*
+       * Succès
+       */
+
       message.innerHTML = `
         <div class="success-box">
           Consommable modifié avec succès.
@@ -5668,10 +6007,41 @@ document
       `;
 
 
+      /*
+       * Réinitialiser la photo temporaire
+       * en mémoire
+       */
+
+      fichierPhotoModification =
+        null;
+
+
+      const inputPhoto =
+        document.getElementById(
+          "editPhotoFichier"
+        );
+
+
+      if (inputPhoto) {
+
+        inputPhoto.value =
+          "";
+
+      }
+
+
+      /*
+       * Recharger les données
+       */
+
       await chargerConsommables();
 
       await chargerStatistiques();
 
+
+      /*
+       * Fermer le modal
+       */
 
       setTimeout(
         fermerModalConsommable,
@@ -12431,6 +12801,338 @@ async function telechargerTousLesConsommablesExcel() {
   }
 
 }
+
+  /* =========================================================
+   PHOTO — MODIFICATION CONSOMMABLE
+   ========================================================= */
+
+let fluxCameraModification = null;
+let fichierPhotoModification = null;
+
+
+/* =========================================================
+   CHOISIR UNE IMAGE
+   ========================================================= */
+
+document
+  .getElementById("editPhotoFichier")
+  ?.addEventListener(
+    "change",
+    function() {
+
+      const fichier =
+        this.files[0];
+
+      if (!fichier) {
+        return;
+      }
+
+
+      if (
+        !fichier.type.startsWith("image/")
+      ) {
+
+        alert(
+          "Le fichier sélectionné doit être une image."
+        );
+
+        this.value = "";
+
+        return;
+      }
+
+
+      fichierPhotoModification =
+        fichier;
+
+
+      afficherApercuPhotoModification(
+        fichier
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   AFFICHER L'APERÇU
+   ========================================================= */
+
+function afficherApercuPhotoModification(
+  fichier
+) {
+
+  const apercu =
+    document.getElementById(
+      "apercuPhotoModification"
+    );
+
+  const image =
+    document.getElementById(
+      "imageApercuModification"
+    );
+
+
+  if (!apercu || !image) {
+    return;
+  }
+
+
+  const url =
+    URL.createObjectURL(
+      fichier
+    );
+
+
+  image.src =
+    url;
+
+
+  apercu.style.display =
+    "block";
+
+}
+
+
+/* =========================================================
+   OUVRIR LA CAMÉRA
+   ========================================================= */
+
+document
+  .getElementById(
+    "boutonPrendrePhotoModification"
+  )
+  ?.addEventListener(
+    "click",
+    async function() {
+
+      const zoneCamera =
+        document.getElementById(
+          "zoneCameraModification"
+        );
+
+      const video =
+        document.getElementById(
+          "videoCameraModification"
+        );
+
+
+      try {
+
+        if (
+          !navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia
+        ) {
+
+          alert(
+            "La caméra n'est pas disponible sur ce navigateur."
+          );
+
+          return;
+
+        }
+
+
+        fluxCameraModification =
+          await navigator.mediaDevices.getUserMedia({
+
+            video: {
+              facingMode: {
+                ideal: "environment"
+              }
+            },
+
+            audio: false
+
+          });
+
+
+        video.srcObject =
+          fluxCameraModification;
+
+
+        zoneCamera.style.display =
+          "block";
+
+
+        await video.play();
+
+      }
+
+      catch (erreur) {
+
+        console.error(
+          "Erreur accès caméra :",
+          erreur
+        );
+
+        alert(
+          "Impossible d'accéder à la caméra. Vérifiez l'autorisation du navigateur."
+        );
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   CAPTURER LA PHOTO
+   ========================================================= */
+
+document
+  .getElementById(
+    "boutonCapturerPhotoModification"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      const video =
+        document.getElementById(
+          "videoCameraModification"
+        );
+
+      const canvas =
+        document.getElementById(
+          "canvasPhotoModification"
+        );
+
+
+      if (
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+
+        alert(
+          "La caméra n'est pas encore prête."
+        );
+
+        return;
+
+      }
+
+
+      canvas.width =
+        video.videoWidth;
+
+      canvas.height =
+        video.videoHeight;
+
+
+      const contexte =
+        canvas.getContext("2d");
+
+
+      contexte.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      canvas.toBlob(
+        function(blob) {
+
+          if (!blob) {
+            return;
+          }
+
+
+          fichierPhotoModification =
+            new File(
+              [blob],
+              "photo-consommable.jpg",
+              {
+                type: "image/jpeg"
+              }
+            );
+
+
+          afficherApercuPhotoModification(
+            fichierPhotoModification
+          );
+
+
+          fermerCameraModification();
+
+        },
+        "image/jpeg",
+        0.9
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   FERMER LA CAMÉRA
+   ========================================================= */
+
+document
+  .getElementById(
+    "boutonFermerCameraModification"
+  )
+  ?.addEventListener(
+    "click",
+    function() {
+
+      fermerCameraModification();
+
+    }
+  );
+
+
+function fermerCameraModification() {
+
+  if (
+    fluxCameraModification
+  ) {
+
+    fluxCameraModification
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+
+    fluxCameraModification =
+      null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "videoCameraModification"
+    );
+
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+  }
+
+
+  const zoneCamera =
+    document.getElementById(
+      "zoneCameraModification"
+    );
+
+
+  if (zoneCamera) {
+
+    zoneCamera.style.display =
+      "none";
+
+  }
+
+}
+  
 </script>
   
 </body>
