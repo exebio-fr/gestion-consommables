@@ -6210,21 +6210,12 @@ async function chargerUtilisateurs() {
     );
 
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("Profils")
-      .select(
-        "id, nom, prenom, service, role"
-      )
-      .order(
-        "nom",
-        {
-          ascending: true
-        }
-      );
+ const {
+  data,
+  error
+} =
+  await supabaseClient
+    .rpc("liste_utilisateurs_gestionnaire");
 
 
   if (error) {
@@ -6272,6 +6263,8 @@ async function chargerUtilisateurs() {
             <th>Service</th>
 
             <th>Rôle</th>
+            
+            <th>Email</th>
 
           </tr>
 
@@ -6300,6 +6293,10 @@ async function chargerUtilisateurs() {
                 <td>
                   ${echapperHTML(profil.role || "")}
                 </td>
+
+                <td>
+  ${echapperHTML(profil.email || "")}
+</td>
 
               </tr>
 
